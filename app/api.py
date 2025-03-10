@@ -13,8 +13,35 @@ vector_store_path = "app/vectorstore/brainlox_faiss"
 def home():
     return jsonify({"message": "Langchain chatbot API is running!"})
 
+# @app.route('/load', methods=['POST'])
+# def load_data():
+#     data = request.json
+#     source = data.get('source')
+#     source_type = data.get('source_type')
+
+#     if not source or not source_type:
+#         return jsonify({'error': 'Source and source_type are required'}), 400
+
+#     try:
+#         create_vector_store(source, source_type)
+#         return jsonify({'message': 'Vector store updated successfully'})
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
 @app.route('/load', methods=['POST'])
 def load_data():
+    if 'file' in request.files:
+        pdf_file = request.files['file']
+        if pdf_file.filename == '':
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        try:
+            pdf_content = pdf_file.read()
+            create_vector_store(pdf_content, "pdf")
+            return jsonify({'message': 'PDF data loaded successfully'})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     data = request.json
     source = data.get('source')
     source_type = data.get('source_type')

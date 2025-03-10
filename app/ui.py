@@ -25,7 +25,7 @@ if st.sidebar.button("Load Data"):
         except Exception as e:
             st.sidebar.error(f"Failed to load data: {str(e)}")
     elif source_type == "PDF" and source:
-        files = {"file": source.getvalue()}
+        files = {"file": ("uploaded.pdf", source.getvalue(), "application/pdf")}
         response = requests.post(f"{API_URL}/load", files=files)
         try:
             st.sidebar.success(response.json().get("message", "PDF data loaded successfully!"))
