@@ -6,7 +6,7 @@ st.title("Langchain Chatbot")
 st.write("Interact with the chatbot built using Langchain and FAISS")
 
 # User input
-user_input = st.text_input("Ask something about technical courses:")
+user_input = st.text_input("Ask something :")
 
 if st.button("Send"):
     if user_input:

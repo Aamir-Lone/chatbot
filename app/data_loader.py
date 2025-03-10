@@ -1,21 +1,28 @@
-
 import requests
+from bs4 import BeautifulSoup
+from PyPDF2 import PdfReader
 from langchain_community.document_loaders import WebBaseLoader
-import os
+from langchain_community.document_loaders import PyPDFLoader
 
-# Function to load data from the URL
-def load_data(url):
-    try:
-        user_agent = os.getenv("USER_AGENT", "Mozilla/5.0")
-        loader = WebBaseLoader(url)
-        documents = loader.load()
-        return documents
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        return []
+def load_data(source, source_type="url"):
+    documents = []
 
-if __name__ == "__main__":
-    url = "https://brainlox.com/courses/category/technical"
-    # url = "https://www.merge.dev/blog/webhooks-vs-polling"
-    docs = load_data(url)
-    print(f"Loaded {len(docs)} documents")
+    if source_type == "url":
+        response = requests.get(source, headers={"User-Agent": "Mozilla/5.0"})
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "html.parser")
+            texts = soup.get_text(separator=" ")
+            documents.append(texts)
+        else:
+            print(f"Failed to fetch URL: {source}")
+
+    elif source_type == "pdf":
+        try:
+            reader = PdfReader(source)
+            for page in reader.pages:
+                if page and page.extract_text():
+                    documents.append(page.extract_text())
+        except Exception as e:
+            print(f"Failed to read PDF: {source}. Error: {e}")
+
+    return documents
