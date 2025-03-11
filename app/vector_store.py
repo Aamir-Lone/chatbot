@@ -46,7 +46,8 @@ from langchain.schema import Document  # Add this import
 from PyPDF2 import PdfReader
 from io import BytesIO
 
-embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+# embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-base-v2')
 
 vector_store_path = "app/vectorstore/brainlox_faiss"
 
@@ -70,7 +71,9 @@ def create_vector_store(source, source_type):
     if not documents:
         raise ValueError("No documents loaded from the source")
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=250)
+    
     texts = text_splitter.split_documents(documents)
 
     if not texts:

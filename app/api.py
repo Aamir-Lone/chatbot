@@ -5,7 +5,8 @@ from vector_store import create_vector_store
 
 app = Flask(__name__)
 
-embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+# embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-base-v2')
 
 vector_store_path = "app/vectorstore/brainlox_faiss"
 
