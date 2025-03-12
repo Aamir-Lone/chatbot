@@ -91,8 +91,12 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from vector_store import create_vector_store
 from transformers import pipeline
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
+
+
 
 # embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
 embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-base-v2')
@@ -100,8 +104,8 @@ embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-ba
 vector_store_path = "app/vectorstore/brainlox_faiss"
 
 # Load FLAN-T5 model for response generation
-rag_pipeline = pipeline("text2text-generation", model="google/flan-t5-small")
-
+# rag_pipeline = pipeline("text2text-generation", model="google/flan-t5-small")
+rag_pipeline = pipeline("text2text-generation", model="google/flan-t5-base")
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Langchain chatbot API is running!"})
@@ -147,11 +151,35 @@ def chat():
         )
 
         docs = vector_store.similarity_search(user_input, k=5)
-        context = " ".join([doc.page_content.replace('\n', ' ') for doc in docs])
+        # context = " ".join([doc.page_content.replace('\n', ' ') for doc in docs])
+        context = "\n\n---\n\n".join([f"Document {i+1}:\n{doc.page_content.replace('\n', ' ')}" for i, doc in enumerate(docs)])
 
         # Use FLAN-T5 model to generate response based on context and query
-        prompt = f"Context: {context}\nQuery: {user_input}\nAnswer:"
-        generated_response = rag_pipeline(prompt, max_length=500, num_return_sequences=1)
+        # prompt = f"Context: {context}\nQuery: {user_input}\nAnswer:"
+
+        prompt = f"""
+        Using the following context, provide a comprehensive and detailed answer to the question.
+        Give a thorough explanation using multiple sentences and include all relevant information from the context.
+        If the context contains a definition or explanation, include it fully in your answer.
+        Don't be brief - aim to provide a complete answer.
+
+        Context:
+        {context}
+
+        Question: {user_input}
+
+        Detailed Answer:
+        """
+        # generated_response = rag_pipeline(prompt, max_length=500, num_return_sequences=1)
+        generated_response = rag_pipeline(
+            prompt, 
+            max_length=500, 
+            min_length=100,  # Encourage longer responses
+            num_return_sequences=1,
+            do_sample=True,
+            temperature=0.7,  # Add some creativity
+            no_repeat_ngram_size=3  # Reduce repetition
+        )
 
         # Clean and format the response
         response_text = generated_response[0]['generated_text']
@@ -168,5 +196,11 @@ def chat():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# if __name__ == '__main__':
+#     # app.run(host='0.0.0.0', port=5000, debug=True)
+#     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    from waitress import serve
+    print("Starting server on http://localhost:5000")
+    serve(app, host='0.0.0.0', port=5000)

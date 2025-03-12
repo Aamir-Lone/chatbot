@@ -72,7 +72,12 @@ def create_vector_store(source, source_type):
         raise ValueError("No documents loaded from the source")
 
     # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1500,
+    chunk_overlap=300,
+    separators=["\n\n", "\n", ".", " ", ""]
+)
     
     texts = text_splitter.split_documents(documents)
 
