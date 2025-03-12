@@ -40,9 +40,11 @@ if st.button("Send"):
     if user_input:
         response = requests.post(f"{API_URL}/chat", json={"message": user_input})
         try:
-            result = response.json().get("results", [])
-            for res in result:
-                st.write(res)
+            # result = response.json().get("results", [])
+            # for res in result:
+            #     st.write(res)
+            result = response.json().get("results", "")
+            st.write(result)
         except Exception as e:
             st.error(f"Failed to fetch response: {str(e)}")
     else:

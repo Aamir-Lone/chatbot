@@ -1,21 +1,37 @@
-from flask import Flask, request, jsonify
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from vector_store import create_vector_store
+# from flask import Flask, request, jsonify
+# from langchain_community.vectorstores import FAISS
+# from langchain_community.embeddings import HuggingFaceEmbeddings
+# from vector_store import create_vector_store
+# from transformers import pipeline
 
-app = Flask(__name__)
+# app = Flask(__name__)
 
-# embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-base-v2')
+# # embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+# embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-base-v2')
 
-vector_store_path = "app/vectorstore/brainlox_faiss"
+# vector_store_path = "app/vectorstore/brainlox_faiss"
 
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({"message": "Langchain chatbot API is running!"})
+# # Load FLAN-T5 model for response generation
+# rag_pipeline = pipeline("text2text-generation", model="google/flan-t5-small")
+
+# @app.route("/", methods=["GET"])
+# def home():
+#     return jsonify({"message": "Langchain chatbot API is running!"})
 
 # @app.route('/load', methods=['POST'])
 # def load_data():
+#     if 'file' in request.files:
+#         pdf_file = request.files['file']
+#         if pdf_file.filename == '':
+#             return jsonify({'error': 'No file uploaded'}), 400
+
+#         try:
+#             pdf_content = pdf_file.read()
+#             create_vector_store(pdf_content, "pdf")
+#             return jsonify({'message': 'PDF data loaded successfully'})
+#         except Exception as e:
+#             return jsonify({'error': str(e)}), 500
+
 #     data = request.json
 #     source = data.get('source')
 #     source_type = data.get('source_type')
@@ -28,6 +44,67 @@ def home():
 #         return jsonify({'message': 'Vector store updated successfully'})
 #     except Exception as e:
 #         return jsonify({'error': str(e)}), 500
+
+# @app.route('/chat', methods=['POST'])
+# def chat():
+#     user_input = request.json.get('message')
+#     if not user_input:
+#         return jsonify({'error': 'No message provided'}), 400
+
+#     try:
+#         vector_store = FAISS.load_local(
+#             vector_store_path,
+#             embeddings=embedding,
+#             allow_dangerous_deserialization=True
+#         )
+
+#         docs = vector_store.similarity_search(user_input, k=5)
+#         context = "\n".join([doc.page_content for doc in docs])
+
+#         # Use FLAN-T5 model to generate response based on context and query
+#         prompt = f"Context: {context}\nQuery: {user_input}\nAnswer:"
+#         generated_response = rag_pipeline(prompt, max_length=500, num_return_sequences=1)
+
+#         # Clean and format the response
+#         response_text = generated_response[0]['generated_text']
+
+#         # Fix any weird spacing and line breaks
+#         response_text = response_text.replace("\n", " ").replace("\r", " ")
+#         response_text = " ".join(response_text.split())
+
+#         response = {
+#             'query': user_input,
+#             'results': response_text
+#         }
+
+#         return jsonify(response)
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True)
+
+# ***********************************************************************************
+
+from flask import Flask, request, jsonify
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from vector_store import create_vector_store
+from transformers import pipeline
+
+app = Flask(__name__)
+
+# embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-mpnet-base-v2')
+
+vector_store_path = "app/vectorstore/brainlox_faiss"
+
+# Load FLAN-T5 model for response generation
+rag_pipeline = pipeline("text2text-generation", model="google/flan-t5-small")
+
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "Langchain chatbot API is running!"})
 
 @app.route('/load', methods=['POST'])
 def load_data():
@@ -70,10 +147,21 @@ def chat():
         )
 
         docs = vector_store.similarity_search(user_input, k=5)
+        context = " ".join([doc.page_content.replace('\n', ' ') for doc in docs])
+
+        # Use FLAN-T5 model to generate response based on context and query
+        prompt = f"Context: {context}\nQuery: {user_input}\nAnswer:"
+        generated_response = rag_pipeline(prompt, max_length=500, num_return_sequences=1)
+
+        # Clean and format the response
+        response_text = generated_response[0]['generated_text']
+
+        # Remove excessive newlines and multiple spaces
+        response_text = " ".join(response_text.split())
 
         response = {
             'query': user_input,
-            'results': [doc.page_content for doc in docs]
+            'results': response_text
         }
 
         return jsonify(response)
